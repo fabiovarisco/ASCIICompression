@@ -32,7 +32,7 @@ public class Huffman {
     // alphabet size of extended ASCII
     private static final int R = 256;
     
-    public Node root; 
+    private Node root; 
 
     // Huffman trie node
     private static class Node implements Comparable<Node> {
@@ -61,7 +61,6 @@ public class Huffman {
 
 
     public ByteArrayOutputStream compress(Integer[] input) {
-        
         // tabulate frequency counts
         int[] freq = new int[R];
         for (int i = 0; i < input.length; i++)
@@ -81,9 +80,6 @@ public class Huffman {
         System.out.println("Bytes in uncompressed message: " + input.length);
 
         // use Huffman code to encode input
-        //int bitCount = 0;
-        //int current = 0;
-        //ByteArrayOutputStream baos = new ByteArrayOutputStream();
         BitEncoder bitEncoder = new BitEncoder();
         for (int i = 0; i < input.length; i++) {
             String code = st[input[i]];
@@ -94,27 +90,9 @@ public class Huffman {
             			 bitEncoder.appendBit(true);
             		 }
             		 else throw new IllegalStateException("Illegal state");
-//            		current = current << 1;
-//            		bitCount++;
-//                if (code.charAt(j) == '0') {
-//                    current += 0;
-//                } else if (code.charAt(j) == '1') {
-//                		current += 1;
-//                }
-//                else throw new IllegalStateException("Illegal state");
-//                
-//                if (bitCount == 8) {
-//                		baos.write(current);
-//                		current = 0;
-//                		bitCount = 0;
-//                }
             }
         }
         bitEncoder.finishWriting();
-//        if (bitCount > 0) {
-//        		current = current << 8 - bitCount;
-//        		baos.write(current);
-//        }
         System.out.println("Bytes in compressed message: " + bitEncoder.getEncoded().size());
         return bitEncoder.getEncoded();
     }

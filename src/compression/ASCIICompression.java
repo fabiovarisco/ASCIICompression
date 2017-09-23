@@ -12,10 +12,13 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Base64;
 
 import burrowsWheeler.BurrowsWheeler;
 import burrowsWheeler.Huffman;
+import burrowsWheeler.HuffmanDoubleDigit;
 import burrowsWheeler.MoveToFront;
+import lzw.LZString;
 
 public class ASCIICompression {
 
@@ -91,7 +94,7 @@ public class ASCIICompression {
 		
 		return decoded;
 	}
-
+	
 	public static void test(String input, boolean verbose) {
 		BurrowsWheeler bwt = new BurrowsWheeler();
 		bwt.encode(input);
@@ -107,24 +110,17 @@ public class ASCIICompression {
 			System.out.println("\nMVT Result: " + sb.toString() + "\n");
 		}
 		
-
 		Huffman hf = new Huffman();
 		ByteArrayOutputStream baos = hf.compress(mvtResult);
-		StringBuilder hfComp = new StringBuilder();
-		for (byte b : baos.toByteArray()) {
-			hfComp.append(b + " ");
+		if (verbose) { 
+			StringBuilder hfComp = new StringBuilder();
+			for (byte b : baos.toByteArray()) {
+				hfComp.append(b + " ");
+			}
+			System.out.println("Huffman encoded: " + hfComp.toString() + "");
 		}
-		byte[] hfTree = hf.transformTreeToByteArray().toByteArray();
-		StringBuilder hfTreeString = new StringBuilder();
-		for (byte b : hfTree) {
-			hfTreeString.append(b + " ");
-		}
-		System.out.println("Huffman Tree: " + hfTreeString);
-		//System.out.println("Huffman encoded: " + hfComp.toString() + "");
-		
-		Huffman hfDecode = new Huffman();
-		hfDecode.readTree(hfTree);
-		Integer[] hfDecoded = hfDecode.expand(baos.toByteArray());
+
+		Integer[] hfDecoded = hf.expand(baos.toByteArray());
 		if (verbose) {
 			StringBuilder sb2 = new StringBuilder();
 			Arrays.stream(hfDecoded).forEach(x -> sb2.append(x + " "));
@@ -139,60 +135,15 @@ public class ASCIICompression {
 			System.out.println("\nBurrows-Wheeler Reverse Org: " + result);
 	}
 	
-	public static void testWithFile(String filename) {
-		BufferedReader br = null;
-		FileReader fr = null;
-		try {
-			fr = new FileReader(filename);
-			br = new BufferedReader(fr);
-			StringBuilder text = new StringBuilder();
-			String sCurrentLine;
-			while ((sCurrentLine = br.readLine()) != null) {
-				text.append(sCurrentLine);
-			}
-			test(text.toString(), false);
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			try {
-				if (br != null)
-					br.close();
-				if (fr != null)
-					fr.close();
-			} catch (IOException ex) {
-				ex.printStackTrace();
-			}
-		}
+	public static void testWithFile(String filename) throws IOException {
+		String text = new String(Files.readAllBytes(Paths.get(filename)));
+		test(text.toString(), false);
 	}
 	
 	public static ByteArrayOutputStream encodeFile(String filename) throws IOException {
 		String text = new String(Files.readAllBytes(Paths.get(filename)));
-		return encode(text.toString());
-//		BufferedReader br = null;
-//		FileReader fr = null;
-//		try {
-//			fr = new FileReader(filename);
-//			br = new BufferedReader(fr);
-//			StringBuilder text = new StringBuilder();
-//			System.out.println(System.lineSeparator());
-//			String sCurrentLine;
-//			while ((sCurrentLine = br.readLine()) != null) {
-//				text.append(sCurrentLine);
-//			}
-//			return encode(text.toString());
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		} finally {
-//			try {
-//				if (br != null)
-//					br.close();
-//				if (fr != null)
-//					fr.close();
-//			} catch (IOException ex) {
-//				ex.printStackTrace();
-//			}
-//		}
-//		return null;
+		ByteArrayOutputStream baos = encode(text);
+		return baos;
 	}
 	
 	public static void encodeFile(String inputFileName, String outputFileName) throws IOException {
@@ -225,21 +176,42 @@ public class ASCIICompression {
 		return new ByteArrayInputStream(Files.readAllBytes(new File(filename).toPath()));
 	}
 
-	public static void main(String[] args) throws IOException {
-		String filename = "//Trabalhos-Faculdade//Unisinos//2017-2//teoria-informacao//cantrbry//alice29.txt";
-		String output = "//Trabalhos-Faculdade//Unisinos//2017-2//teoria-informacao//cantrbry//alice29.fabiozip";
-		String decodedFile = "//Trabalhos-Faculdade//Unisinos//2017-2//teoria-informacao//cantrbry//alice29-decoded.txt";
+	public static void main(String[] args) throws Exception {
+		String filename = ".//files//alice29.txt";
+		String output = ".//files//alice29.fabiozip";
+		String decodedFile = ".//files//alice29-decoded.txt";
 		
-		//test(DECODED_INPUT, true);
-		//testWithFile("//Trabalhos-Faculdade//Unisinos//2017-2//teoria-informacao//cantrbry//alice29.txt");
 //		//ByteArrayOutputStream baos = encode(DECODED_INPUT);
 //		ByteArrayOutputStream baos = encodeFile(filename);
 //		ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
 //		String decoded = decode(bais);
 //		System.out.println(decoded);
-		
 		encodeFile(filename, output);
 		decodeFromFile(output, decodedFile);
 	}
+	
+	public static void testLZString(String input) throws Exception  { 
+		String compressed = LZString.compressToBase64(input);
+		System.out.println(String.format("Compressed (%d bytes): %s", compressed.length(), compressed));
+		
+		String decompressed = LZString.decompressFromBase64(compressed);
+		System.out.println(String.format("Decompressed (%d bytes), %s", decompressed.length(), decompressed));
+	}
+
+	public static void encodeLZStringFile(String filename, String outputFile) throws Exception { 
+		String text = new String(Files.readAllBytes(Paths.get(filename)));
+		String compressed = LZString.compress(text);
+		System.out.println(String.format("Compressed (%d length of string)", compressed.length()));
+		
+		try (PrintStream out = new PrintStream(new FileOutputStream(outputFile))) {
+		    out.print(compressed);
+		    out.close();
+		} 
+		
+		String decompressed = LZString.decompress(compressed);
+		System.out.println(String.format("Decompressed (%d bytes)", decompressed.length()));
+	}
+	
+	
 
 }
