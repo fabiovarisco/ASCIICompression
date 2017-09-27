@@ -55,9 +55,7 @@ public class ASCIICompression {
 		
 		ByteArrayOutputStream result = new ByteArrayOutputStream();
 		
-		byte[] firstChar = intToByteArray(bwt.getFirstChar());
-		
-		result.write(firstChar);
+		result.write(intToByteArray(bwt.getFirstChar()));
 		
 		result.write(intToByteArray(hfTree.size()));
 		
@@ -178,7 +176,7 @@ public class ASCIICompression {
 
 	public static void main(String[] args) throws Exception {
 		String filename = ".//files//alice29.txt";
-		String output = ".//files//alice29.fabiozip";
+		String output = ".//files//alice29.fgzip";
 		String decodedFile = ".//files//alice29-decoded.txt";
 		
 //		//ByteArrayOutputStream baos = encode(DECODED_INPUT);

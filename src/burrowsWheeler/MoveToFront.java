@@ -81,6 +81,7 @@ public class MoveToFront {
 	   }
 	   return result;
    }
+   
    /**
     *  Apply move-to-front decoding, reading from standard input and writing to standard output
     */
